@@ -7,3 +7,4 @@ langchain-ollama
 python-dotenv 
 tiktoken
 langchain-google-genai
+fastapi[standard]
