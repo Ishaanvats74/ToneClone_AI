@@ -1,7 +1,7 @@
 import re
 import os
 import random
-from fastapi import FastAPI , UploadFile
+from fastapi import FastAPI , UploadFile , Form , File
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from typing import TypedDict , Literal
@@ -26,7 +26,7 @@ embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001", api_key=
 llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview",temperature=0.7,api_key=os.getenv("GOOGLE_API_KEY"))
 # embeddings = OllamaEmbeddings(model="qwen3-embedding:0.6b")
 # llm = ChatOllama(model="qwen2.5:7b",temperature=0.7)
-vector_store = Chroma(collection_name="chats",embedding_function=embeddings)
+vector_store = Chroma(collection_name="chats",embedding_function=embeddings,persist_directory="./chroma_db")
 current_user_name = None
 
 @app.get("/")
@@ -159,7 +159,8 @@ chat_graph.add_edge("generate_response", END)
 chat_graph = chat_graph.compile()
 
 @app.post("/load_chat")
-def load_chat(file: UploadFile, user_name: str):
+def load_chat( file: UploadFile = File(...),
+    user_name: str = Form(...)):
 
     global current_user_name
     current_user_name = user_name

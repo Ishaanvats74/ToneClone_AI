@@ -35,10 +35,10 @@ if st.button("Load Chat"):
     if uploaded_file and user_name:
 
         files = {
-            "file": (uploaded_file.name, uploaded_file.getvalue())
-        }
+        "file": (uploaded_file.name, uploaded_file.getvalue())
+        }   
 
-        params = {
+        data = {
             "user_name": user_name
         }
 
@@ -47,14 +47,14 @@ if st.button("Load Chat"):
             response = requests.post(
                 f"{API_URL}/load_chat",
                 files=files,
-                params=params
+                data=data
             )
 
         if response.status_code == 200:
             st.success("Chat indexed successfully! ✅")
             st.session_state.chat_loaded = True
         else:
-            st.error("Error indexing chat ❌")
+            st.error(response.text)
 
     else:
         st.warning("Please upload a chat file and enter your name.")
