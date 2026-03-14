@@ -6,3 +6,4 @@ langchain-community
 langchain-ollama
 python-dotenv 
 tiktoken
+langchain-google-genai

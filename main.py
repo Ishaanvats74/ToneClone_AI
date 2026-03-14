@@ -5,9 +5,16 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_chroma import Chroma
 from typing import TypedDict , Literal
 from langgraph.graph import StateGraph , START , END
+from langchain_google_genai import ChatGoogleGenerativeAI , GoogleGenerativeAIEmbeddings
+import os
+import random
+from dotenv import load_dotenv
+load_dotenv()
 
-embeddings = OllamaEmbeddings(model="qwen3-embedding:0.6b")
-llm = ChatOllama(model="llama3.1:8b",temperature=0)
+# embeddings = OllamaEmbeddings(model="qwen3-embedding:0.6b")
+# llm = ChatOllama(model="qwen2.5:7b",temperature=0.7)
+embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001", api_key=os.getenv("GOOGLE_API_KEY"))
+llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview",temperature=0.7,api_key=os.getenv("GOOGLE_API_KEY"))
 vector_store = Chroma(collection_name="chats",embedding_function=embeddings)
 
 class ChatState(TypedDict):
@@ -38,8 +45,10 @@ def load_format(state:ChatState):
                     continue
                 if "<Media omitted>" in message:
                     continue
-
-                messages.append(f"{sender}: {message}")
+                if state['user_name'] == sender:
+                    continue
+                message = message.strip()
+                messages.append(message)
 
     return {"chat_history":messages}
 
@@ -47,7 +56,7 @@ def load_format(state:ChatState):
 
 def chunk_texts(state: ChatState):
     text = "\n".join(state["chat_history"])
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=80,chunk_overlap=20)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=300,chunk_overlap=50)
     chunks = text_splitter.split_text(text)
     vector_store.add_texts(texts=chunks)
     return {"text_chuked": "yes"}
@@ -70,41 +79,45 @@ def generate_response(state: ChatState):
     )
 
     # random style examples
-    style_docs = vector_store._collection.get(limit=4)
+    
 
-    style_examples = "\n".join(
-        doc for sublist in style_docs["documents"] for doc in sublist
-    )
+    style_docs = vector_store._collection.get(limit=30)
+    examples = style_docs["documents"]
+
+    style_examples = "\n".join(random.sample(examples, 8))
 
     context = semantic_context + "\n" + style_examples
-
     template = PromptTemplate(
-        template = """
-You are continuing a WhatsApp chat.
+       template = """
+You are mimicking someone's WhatsApp texting style.
 
-STYLE EXAMPLES (how the other person writes)
----------------------------------------------
+STYLE EXAMPLES
+--------------
 {context}
 
-These examples show ONLY the person's texting style.
-If a message in the examples answers a different question,
-do NOT reuse it.
+These are ONLY examples of writing style.
+
+Do NOT reuse the content of these messages.
+Use them only to understand:
+- tone
+- wording
+- message length
+- slang
 
 Rules:
-- Use the SAME style as the examples.
-- Replies must be SHORT (1–8 words).
-- Use casual Hinglish like WhatsApp messages.
-- Do NOT write formal Hindi.
-- Do NOT copy the example messages.
-- If examples answer different questions, ignore them.
-- Generate a NEW reply.
-- Do NOT include the speaker name.
+- Reply must be a complete natural message.
+- Use the SAME texting style.
+- NEVER copy any sentence from the examples.
+- The reply must be completely new.
+- Reply must be 1–6 words.
+- Casual Hinglish WhatsApp style.
+- Do NOT include any names.
 
-MESSAGE FROM {user_name}:
+Message from {user_name}:
 {query}
 
-Reply like the other person would on WhatsApp.
-Only output the message.
+Reply as the other person would.
+Output ONLY the reply.
 """,
         input_variables=["query", "context","user_name"]
     )
@@ -133,11 +146,11 @@ app = graph.compile()
 
 result = app.invoke({
     "file_path": "chat.txt",
-    "query": "bhaiya kaha ho?",
+    "query": "kya kar rahe ho ?",
     "user_name": "Ishaan Vats",
     "text_chuked": "no"
 })
-print(result["ai_reply"])   
+print(result["ai_reply"][0]['text'])   
 
 
 
