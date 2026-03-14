@@ -17,7 +17,6 @@ class ChatState(TypedDict):
     query: str    
     file_path:str
     ai_reply:str
-    text_chuked: Literal["yes", "no"]
 
 load_dotenv()
 app = FastAPI()
@@ -26,16 +25,12 @@ embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001", api_key=
 llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview",temperature=0.7,api_key=os.getenv("GOOGLE_API_KEY"))
 # embeddings = OllamaEmbeddings(model="qwen3-embedding:0.6b")
 # llm = ChatOllama(model="qwen2.5:7b",temperature=0.7)
-vector_store = Chroma(collection_name="chats",embedding_function=embeddings,persist_directory="./chroma_db")
+vector_store = Chroma(collection_name="chats",embedding_function=embeddings)
 current_user_name = None
 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
-
-
-
-
 
 def load_format(state:ChatState):
     messages = []
@@ -73,12 +68,6 @@ def chunk_texts(state: ChatState):
     vector_store.add_texts(texts=chunks)
     return {"text_chuked": "yes"}
     
-def check_chunk(state: ChatState):
-
-    if state["text_chuked"] == "yes":
-        return "generate_response"
-
-    return "chunk_texts"
 
 def generate_response(state: ChatState):
     user_name = state["user_name"]
@@ -172,7 +161,6 @@ def load_chat( file: UploadFile = File(...),
     index_graph.invoke({
         "file_path": file_path,
         "user_name": user_name,
-        "text_chuked": "no"
     })
 
     return {"status": "chat indexed"}
