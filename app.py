@@ -94,7 +94,10 @@ if st.session_state.chat_loaded:
 
                 response = requests.post(
                     f"{API_URL}/chat",
-                    params={"query": user_input}
+                    params={
+                        "query": user_input,
+                        "user_name": user_name
+                    }
                 )
 
                 if response.status_code == 200:

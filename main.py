@@ -184,4 +184,4 @@ def chat(query: str):
         "user_name": current_user_name
     })
 
-    return {"reply": result["ai_reply"][0]['text']}
+    return {"reply": result["ai_reply"]}
