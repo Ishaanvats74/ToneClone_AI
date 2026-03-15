@@ -9,3 +9,5 @@ tiktoken
 langchain-google-genai
 fastapi[standard]
 langchain-chroma
+langchain-pinecone
+pinecone-client
